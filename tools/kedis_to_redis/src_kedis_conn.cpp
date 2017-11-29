@@ -11,6 +11,7 @@
 #include "redis_parser.h"
 #include "simple_log.h"
 #include "sync_task.h"
+#include "redis_serializer.h"
 #include <ctype.h>
 #include <algorithm>
 using namespace std;
@@ -172,7 +173,26 @@ void SrcKedisConn::_HandleRedisCommand(vector<string>& cmd_vec)
         log_message(kLogLevelInfo, "receive all snapshot, cur_db_idx=%d\n", cur_db_num_);
     } else if (cmd == "RESTORE") {
         // decode kedis format to redis format
-        
+        if ((g_config.src_kedis_db == -1) || (g_config.src_kedis_db == cur_db_num_)) {
+            string key = cmd_vec[1];
+            string ttl_str = cmd_vec[2];
+            string redis_serialized_value;
+            if (convert_kedis_serialized_value(cmd_vec[3], redis_serialized_value) == CODE_ERROR) {
+                log_message(kLogLevelError, "convert serialized value failed for key: %s\n", key.c_str());
+                return;
+            }
+
+            if (!g_config.prefix.empty()) {
+                _RemoveKeyPrefix(key);
+            }
+            
+            string request;
+            vector<string> redis_cmd_vec{"RESTORE", key, ttl_str, redis_serialized_value};
+            build_request(redis_cmd_vec, request);
+            
+            SyncCmdTask* task = new SyncCmdTask(request);
+            g_thread_pool.AddTask(task);
+        }
     } else {
         if ((g_config.src_kedis_db == -1) || (g_config.src_kedis_db == cur_db_num_)) {
             string raw_cmd;

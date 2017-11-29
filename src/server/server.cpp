@@ -201,8 +201,6 @@ void init_server_config()
 
 void init_rocksdb_options()
 {
-    g_server.write_option.disableWAL = true;
-    
     g_server.options.create_if_missing = true;
     
     // optimise RocksDB options, reference:

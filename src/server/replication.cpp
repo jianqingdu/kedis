@@ -192,6 +192,7 @@ ReplicationSnapshot::~ReplicationSnapshot()
 
 void ReplicationSnapshot::SendTo(ClientConn* conn)
 {
+    uint64_t now = get_tick_count();
     while (!conn->IsBusy()) {
         if (IsCompelte()) {
             return;
@@ -233,7 +234,7 @@ void ReplicationSnapshot::SendTo(ClientConn* conn)
                     stream >> count;
                 }
                 
-                if (ttl && ttl <= get_tick_count()) {
+                if (ttl && ttl <= now) {
                     iterator_->Next();
                     continue;
                 }
@@ -251,6 +252,11 @@ void ReplicationSnapshot::SendTo(ClientConn* conn)
                 if (ret == kExpireDBError) {
                     iterator_->Next();
                     continue;
+                }
+                
+                // ttl in restore command is a relative time interval
+                if (ttl) {
+                    ttl -= now;
                 }
                 
                 string request;
