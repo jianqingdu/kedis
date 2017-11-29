@@ -15,10 +15,6 @@ else
 CFLAGS += -DDEBUG
 endif
 
-ifdef version
-CFLAGS+=-DKEDIS_VERSION=\"$(version)\"
-endif
-
 LDFLAGS= -lbase $(PLATFORM_LDFLAGS) $(ROCKSDB_PATH)/librocksdb.a 
 
 LN=/bin/ln -s 
@@ -29,8 +25,8 @@ RM=/bin/rm -rf
 # target binary object
 BIN=kedis-server
 
-SrcDir= . ../redis_parser
-IncDir= . ../base $(ROCKSDB_PATH)/include
+SrcDir= . 
+IncDir= ../base $(ROCKSDB_PATH)/include
 LibDir= ../base/
 
 SRCS=$(foreach dir,$(SrcDir),$(wildcard $(dir)/*.cpp))
@@ -46,6 +42,7 @@ all:$(BIN)
 $(BIN):$(OBJS) ../base/libbase.a $(ROCKSDB_PATH)/librocksdb.a
 	$(CC) -o $(BIN) $(OBJS) $(LDFLAGS)
 	@echo " OK!\tCompile $@ "
+	@echo
 
 %.o:%.cpp
 	@echo "$(CC) $(CFLAGS) -c $< -o $@"

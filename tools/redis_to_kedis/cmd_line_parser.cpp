@@ -7,10 +7,7 @@
 //
 
 #include "cmd_line_parser.h"
-
-#ifndef REDIS_TO_KEDIS_VERSION
-#define REDIS_TO_KEDIS_VERSION "1.0.0" // major.minor.patch
-#endif
+#include "kedis_version.h"
 
 Config g_config;
 
@@ -74,7 +71,7 @@ void parse_cmd_line(int argc, char* argv[])
         } else if (!strcmp(argv[i], "--src_from_rdb")) {
             g_config.src_from_rdb = true;
         } else if (!strcmp(argv[i], "--version")) {
-            printf("redis_to_kedis Version: %s\n", REDIS_TO_KEDIS_VERSION);
+            printf("redis_to_kedis Version: %s\n", KEDIS_VERSION);
             printf("redis_to_kedis Build: %s %s\n", __DATE__, __TIME__);
             exit(0);
         } else {

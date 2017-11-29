@@ -36,6 +36,7 @@ all:$(BIN)
 $(BIN):$(OBJS)
 	$(AR) -r $(BIN) $(OBJS)
 	@echo " OK!\tCompile $@ "
+	@echo
 
 %.o:%.cpp
 	$(CC) $(CFLAGS) -c $< -o $@

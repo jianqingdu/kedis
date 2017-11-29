@@ -8,10 +8,6 @@ else
 CFLAGS += -DDEBUG
 endif
 
-ifdef version
-CFLAGS+=-DKEDIS_TO_REDIS_VERSION=\"$(version)\"
-endif
-
 LDFLAGS= -lbase -lpthread ../hiredis/libhiredis.a ../../src/server/redis_parser.o ../../src/server/redis_byte_stream.o
 
 RM=/bin/rm -rf
@@ -21,7 +17,7 @@ ARCH=PC
 BIN=kedis_to_redis
 
 SrcDir= . ../hiredis_wrapper
-IncDir= . ../../src/base ../../src/server ../hiredis  ../hiredis_wrapper
+IncDir= ../../src/base ../../src/server ../hiredis  ../hiredis_wrapper
 LibDir= ../../src/base/
 
 SRCS=$(foreach dir,$(SrcDir),$(wildcard $(dir)/*.cpp))
@@ -37,6 +33,7 @@ all:$(BIN)
 $(BIN):$(OBJS) ../../src/base/libbase.a ../hiredis/libhiredis.a
 	$(CC) -o $(BIN) $(OBJS) $(LDFLAGS)
 	@echo " OK!\tCompile $@ "
+	@echo
 
 ../hiredis/libhiredis.a:
 	make -C ../hiredis

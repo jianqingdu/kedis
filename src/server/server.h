@@ -15,11 +15,7 @@
 #include "binlog.h"
 #include "key_lock.h"
 #include "rocksdb/db.h"
-
-#ifndef KEDIS_VERSION
-#define KEDIS_VERSION "X.X.X"
-#endif
-
+#include "kedis_version.h"
 
 // Instantaneous metrics tracking.
 #define STATS_METRIC_SAMPLES    10 // Number of samples per metric

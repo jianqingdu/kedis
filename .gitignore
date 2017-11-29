@@ -4,6 +4,8 @@
 *.so
 *.dylib
 
+kedis*.tar.gz
+
 src/3rd_party/rocksdb-5.6.2
 src/server/kedis-server
 tests/tmp/*

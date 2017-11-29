@@ -15,15 +15,16 @@ Dependency:
 
 How to build 
 
-	cd src
-	./build version 0.1
-If everything is OK, the executable file will be in src/server/kedis-server
+	./build.sh
+	
+If everything is OK, the executable file will be in src/server/kedis-server.
+The server config file is in src/server/kedis.conf
 
 ## Run
 
 	./kedis-server -c ./kedis.conf
 
-After that, you can connect to server with any redis client, suck as redis-cli:
+After that, you can connect to server with any redis client, suck as redis-cli
 
 	redis-cli -p 6379 set k v
 	redis-cli -p 6379 get k

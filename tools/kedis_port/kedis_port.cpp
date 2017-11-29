@@ -13,10 +13,7 @@
 #include "simple_log.h"
 #include "sync_task.h"
 #include "src_kedis_conn.h"
-
-#ifndef KEDIS_PORT_VERSION
-#define KEDIS_PORT_VERSION "0.1.0" // major.minor.patch
-#endif
+#include "kedis_version.h"
 
 Config g_config;
 
@@ -65,7 +62,7 @@ void parse_cmd_line(int argc, char* argv[])
         } else if (!strcmp(argv[i], "--prefix") && !last_arg) {
             g_config.prefix = argv[++i];
         } else if (!strcmp(argv[i], "--version")) {
-            printf("redis_port Version: %s\n", KEDIS_PORT_VERSION);
+            printf("redis_port Version: %s\n", KEDIS_VERSION);
             printf("redis_port Build: %s %s\n", __DATE__, __TIME__);
             exit(0);
         } else {
