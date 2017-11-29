@@ -18,10 +18,11 @@ kedis-server主要是为了解决Redis服务器的内存容量限制问题，用
 3）一些后台处理线程，比如通过TTL来删除key的检测线程，binlog清理线程
 
 总的线程模型图如下所示
-![](images/thread_model.png)
+
+<img width="400" height="300" src="images/thread_model.png"/>
 
 ## 3. 架构
-![](images/kedis_arch.png)
+<img width="500" height="450" src="images/kedis_arch.png"/>
 
 ## 4. 存储引擎编码格式
 由于RocksDB是一种简单的kv存储引擎，要实现Redis的那些复杂数据结构和支持TTL，需要精心设计存储的编码格式，来实现Redis的string, hash, list, set, sorted set这五种数据类型
@@ -47,7 +48,8 @@ ttl占用8个字节，是一个超时时间戳，单位毫秒，如果为0，表
 count占用8个字节，表示复杂数据类型中一个key里面的元素个数
 
 ### 4.1 string类型
-![](images/string.png)
+<img width="400" height="80" src="images/string.png"/>
+
 
 对应到RocksDB的key编码有type, key两个字段组成
 
@@ -66,7 +68,7 @@ key之前没有len字段，这样所有的key都会按字典顺序进行排序�
 * value是实际用户设置的值
 
 ### 4.2 hash类型
-![](images/hash.png")
+<img width="400" height="210" src="images/hash.png"/>
 
 元数据信息的key编码也是有type，key两个字段组成，和string类型的完全一致
 元数据信息的value编码有type, ttl, count三个字段组成
@@ -91,7 +93,7 @@ field的value编码有type, len, value三个字段表示
 
 
 ### 4.3 list类型
-![](images/list.png)
+<img width="400" height="260" src="images/list.png"/>
 
 元数据信息的key编码也是有type, key两个字段组成，和string类型的完全一致
 元数据信息的value编码有type, ttl, count, head, tail, seq六个字段组成
@@ -120,7 +122,7 @@ element的value编码由type, prev, next, len, value五个字段组成
 * value是该元素的值
 
 ### 4.4 set类型
-![](images/set.png)
+<img width="400" height="150" src="images/set.png"/>
 
 元数据信息的key编码也是有type key两个字段组成，和string类型的完全一致
 元数据信息的value编码有type, ttl, count三个字段组成
@@ -140,7 +142,8 @@ member元素的key编码格式，有type, len, key, len, member五个字段组�
 member元素的value，只有type一个字段，type=8，表示KEY_TYPE_SET_MEMBER
 
 ### 4.5 sorted set类型
-![](images/zset.png)
+<img width="400" height="220" src="images/zset.png"/>
+
 
 元数据信息的key编码也是有type，key两个字段组成，和string类型的完全一致
 元数据信息的value编码有type, ttl, count三个字段组成
@@ -179,7 +182,7 @@ member元素的value编码格式，只有type，score两个字段
 当zset的所有元素的score相同时，会按member的字典顺序排序，这也是为什么member前面没有len的原因，不然len也会参与到排序，就不是严格按照member的字典顺序排序了
 
 ### 4.6 ttl
-![](images/ttl.png)
+<img width="400" height="80" src="images/ttl.png"/>
 
 key的编码有type, ttl, len, key四个字段组成
 
@@ -194,7 +197,7 @@ value编码就只有一个字段，type是key的类型，删除key的时候会�
 
 ## 5. Replication
 主从复制功能其实是要实现全量同步和增量同步这两个功能，实现的流程设计如下，主要是需要实现一个状态机：
-![](images/replication-state.png)
+<img width="500" height="600" src="images/replication-state.png"/>
 
 1. slave如果配置了masterauth选项，则发送"AUTH password"到master，进入RECV_AUTH状态，没有则跳到步骤3
 2. slave收到OK的回复
