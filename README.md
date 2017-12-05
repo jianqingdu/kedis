@@ -41,4 +41,4 @@ After build the server, you can run the test case with
 
 ## Architecture
 
-[Kedis-Server Deisgn Documentation](doc/kedis_server_design.md)
+[Kedis-Server Deisgn Documentation](doc/kedis_server_design_en.md)

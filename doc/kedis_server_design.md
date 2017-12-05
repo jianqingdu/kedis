@@ -158,9 +158,9 @@ member元素的key编码格式，有type, len, key, len, member五个字段组�
 
 * type=10, 表示KEY_TYPE_ZSET_SCORE
 * 第一个len是key的长度
-* key是set的key
+* key是zset的key
 * 第二个len是member的长度
-* member是set里面的一个元素
+* member是zset里面的一个元素
 
 member元素的value编码格式，只有type，score两个字段
 
@@ -171,9 +171,9 @@ member元素的value编码格式，只有type，score两个字段
 
 * type=11, 表示KEY_TYPE_ZSET_SORT
 * len是key的长度
-* key是set的key
+* key是zset的key
 * score是一个8个字节的无符号整型，表示member的分值
-* member是set里面的一个元素
+* member是zset里面的一个元素
 
 用于排序的member元素的value，只有type一个字段，type=11，表示KEY_TYPE_ZSET_SORT
 
@@ -203,9 +203,9 @@ value编码就只有一个字段，type是key的类型，删除key的时候会�
 2. slave收到OK的回复
 3. slave发送"REPLCONF listening-port port"到master，进入RECV_PORT状态
 4. slave收到OK的回复
-5. slave发送"PSYNC expect-binlog-seq"到master，进入RECV_SYNC状态
+5. slave发送"PSYNC binlog_id expect_binlog_seq"到master，进入RECV_SYNC状态
 6. slave收到CONTINUE的回复，则表示master上有slave请求的binlog，slave进入CONNECTED状态，直接进入增量同步阶段
-7. slave收到FULLRESYNC的回复，则表示master会发送全量snapshot过来，slave进入RECV_SNAPSHOT状态，此后master会一直发送"SELECT db"和"RESTORE key ttl serialized-value"的数据过来，直到slave收到"REPL_SNAPSHOT_COMPLETE binlog-id max-binlog-seq", 表示slave接收到了所有的snapshot数据，slave进入CONNECTED状态，进入增量同步阶段
+7. slave收到FULLRESYNC的回复，则表示master会发送全量snapshot过来，slave进入RECV_SNAPSHOT状态，此后master会一直发送"SELECT db"和"RESTORE key ttl serialized-value"的数据过来，直到slave收到"REPL_SNAPSHOT_COMPLETE binlog_id cur_db_idx max_binlog_seq", 表示slave接收到了所有的snapshot数据，slave进入CONNECTED状态，进入增量同步阶段
 
 
 ## 6. 实现的一些细节
