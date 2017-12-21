@@ -45,6 +45,7 @@ void init_server_config()
     g_server.io_thread_num = 16;
     g_server.db_name = "kdb";
     g_server.db_num = 16;
+    g_server.key_count_file = "key-count";
     g_server.binlog_dir = "binlog";
     g_server.binlog_capacity = 100000;
     g_server.master_port = 0;
@@ -291,24 +292,34 @@ void init_key_count()
         g_server.operating_count_vec[i] = 0;
     }
     
-    // get key count from db
-    rocksdb::Status s;
-    EncodeKey prefix_key(KEY_TYPE_META, "");
-    EncodeKey encode_key_count(KEY_TYPE_STATS, "KEY_COUNT");
-    EncodeKey encode_ttl_key_count(KEY_TYPE_STATS, "TTL_KEY_COUNT");
-    for (int i = 0; i < g_server.db_num; i++) {
-        rocksdb::ColumnFamilyHandle* cf_handle = g_server.cf_handles_map[i];
-        string key_count;
-        string ttl_key_count;
-        s = g_server.db->Get(g_server.read_option, cf_handle, encode_key_count.GetEncodeKey(), &key_count);
-        if (s.ok()) {
-            g_server.key_count_vec[i] = atol(key_count.c_str());
+    // get key count from file
+    g_server.key_count_mem_size = g_server.db_num * 16;
+    g_server.key_count_mem = new uchar_t [g_server.key_count_mem_size];
+    g_server.key_count_fd = open(g_server.key_count_file.c_str(), O_RDWR|O_CREAT, 0644);
+    if (g_server.key_count_fd == -1) {
+        log_message(kLogLevelError, "open key_count failed, errno=%d\n", errno);
+        exit(1);
+    }
+    
+    struct stat st_buf;
+    fstat(g_server.key_count_fd, &st_buf);
+    if (st_buf.st_size == g_server.key_count_mem_size) {
+        if (read(g_server.key_count_fd, g_server.key_count_mem, g_server.key_count_mem_size) != g_server.key_count_mem_size) {
+            log_message(kLogLevelError, "read data from key_count file failed\n");
+            exit(1);
         }
         
-        s = g_server.db->Get(g_server.read_option, cf_handle, encode_ttl_key_count.GetEncodeKey(), &ttl_key_count);
-        if (s.ok()) {
-            g_server.ttl_key_count_vec[i] = atol(ttl_key_count.c_str());
+        for (int i = 0; i < g_server.db_num; i++) {
+            g_server.key_count_vec[i] = ByteStream::ReadInt64(g_server.key_count_mem + i * 16);
+            g_server.ttl_key_count_vec[i] = ByteStream::ReadInt64(g_server.key_count_mem + i * 16 + 8);
         }
+    }
+    
+    // if key count is less than MAX_KEY_ITERATIOR_COUNT, scan the db to get the exact key count
+    rocksdb::Status s;
+    EncodeKey prefix_key(KEY_TYPE_META, "");
+    for (int i = 0; i < g_server.db_num; i++) {
+        rocksdb::ColumnFamilyHandle* cf_handle = g_server.cf_handles_map[i];
         
         if (g_server.key_count_vec[i] < MAX_KEY_ITERATOR_COUNT) {
             long key_num = 0;
@@ -351,16 +362,14 @@ void init_key_count()
 
 void persist_key_count()
 {
-    EncodeKey encode_key_count(KEY_TYPE_STATS, "KEY_COUNT");
-    EncodeKey encode_ttl_key_count(KEY_TYPE_STATS, "TTL_KEY_COUNT");
     for (int i = 0; i < g_server.db_num; i++) {
-        ScanKeyGuard scan_key_guard(i);
-        
-        rocksdb::ColumnFamilyHandle* cf_handle = g_server.cf_handles_map[i];
-        g_server.db->Put(g_server.write_option, cf_handle, encode_key_count.GetEncodeKey(), to_string(g_server.key_count_vec[i]));
-        g_server.db->Put(g_server.write_option, cf_handle, encode_ttl_key_count.GetEncodeKey(),
-                         to_string(g_server.ttl_key_count_vec[i]));
+        ByteStream::WriteInt64(g_server.key_count_mem + i * 16, g_server.key_count_vec[i]);
+        ByteStream::WriteInt64(g_server.key_count_mem + i * 16 + 8, g_server.ttl_key_count_vec[i]);
     }
+    
+    lseek(g_server.key_count_fd, 0, SEEK_SET);
+    write(g_server.key_count_fd, g_server.key_count_mem, g_server.key_count_mem_size);
+    fsync(g_server.key_count_fd);
 }
 
 void init_server()
@@ -419,6 +428,8 @@ void shutdown_signal_handler(int sig_no)
     g_binlog_purge_thread.StopThread();
     
     persist_key_count();
+    close(g_server.key_count_fd);
+    delete [] g_server.key_count_mem;
     
     close_db();
     

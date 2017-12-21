@@ -106,6 +106,8 @@ void load_config(const string& filename)
             }
         } else if (!strcasecmp("db-name", argv[0].c_str()) && (argc == 2)) {
             g_server.db_name = argv[1];
+        } else if (!strcasecmp("key-count-file", argv[0].c_str()) && (argc == 2)) {
+            g_server.key_count_file = argv[1];
         } else if (!strcasecmp("binlog-dir", argv[0].c_str()) && (argc == 2)) {
             g_server.binlog_dir = argv[1];
         } else if (!strcasecmp("binlog-capacity", argv[0].c_str()) && (argc == 2)) {
@@ -214,7 +216,10 @@ databases %d
     
 # Set the name of database. The default name is kdb, all data files will be saved in this directory
 db-name %s
-    
+
+# Set the name of key count file
+key-count-file %s
+
 # save binlog db file in this directory
 binlog-dir %s
     
@@ -336,7 +341,7 @@ hll-sparse-max-bytes %d
     fprintf(fp, config_pattern_general.c_str(),
             g_server.daemonize ? "yes" : "no", g_server.pid_file.c_str(), log_level[g_server.log_level],
             g_server.log_path.c_str(), g_server.io_thread_num, g_server.db_num, g_server.db_name.c_str(),
-            g_server.binlog_dir.c_str(), g_server.binlog_capacity,
+            g_server.key_count_file.c_str(), g_server.binlog_dir.c_str(), g_server.binlog_capacity,
             g_server.require_pass.empty() ? "#" : "",
             g_server.require_pass.empty() ? "<password>" : g_server.require_pass.c_str(), g_server.max_clients);
 

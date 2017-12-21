@@ -194,6 +194,7 @@ proc start_server {options {code undefined}} {
 	dict set config logpath [format "%s/log" $tmpdir]
 	dict set config db-name [format "%s/kdb" $tmpdir]
   	dict set config binlog-dir [format "%s/binlog" $tmpdir]
+	dict set config key-count-file [format "%s/key-count" $tmpdir]
 
     # start every server on a different port
     set ::port [find_available_port [expr {$::port+1}]]

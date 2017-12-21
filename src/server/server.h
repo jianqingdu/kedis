@@ -75,6 +75,11 @@ struct KedisServer {
     atomic<long> repl_snapshot_count;
     Binlog  binlog;
     
+    string      key_count_file;
+    int         key_count_fd;
+    uchar_t*    key_count_mem;
+    int         key_count_mem_size;
+    
     net_handle_t    master_handle;
     string          master_link_status;
     mutex           slave_mutex;
