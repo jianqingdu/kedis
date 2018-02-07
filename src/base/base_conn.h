@@ -18,23 +18,6 @@ const int kConnTimeout = 16000;
 const int kMaxSendSize = 128 * 1024;
 const int kReadBufSize = 2048;
 
-struct SendingFile {
-    string filename;
-    FILE* fp;
-    uint64_t offset;
-    uint64_t size;
-    
-    SendingFile() : fp(NULL), offset(0), size(0) {}
-};
-
-#define SENDING_OBJ_TYPE_BUF    1
-#define SENDING_OBJ_TYPE_FILE   2
-
-struct SendingObject {
-    uint8_t type;
-    SimpleBuffer buf;
-    SendingFile file;
-};
 
 class BaseConn : public RefCount
 {
@@ -52,7 +35,6 @@ public:
     
     virtual net_handle_t Connect(const string& server_ip, uint16_t server_port, int thread_index = -1);
     int Send(void* data, int len);
-    int SendFile(const string& filename);
     virtual void Close();
     
 	virtual void OnConnect(BaseSocket* base_socket);
@@ -70,8 +52,6 @@ public:
     static long GetTotalNetOutputBytes() { return m_total_net_output_bytes; }
 protected:
     void _RecvData();
-    void _SendBuffer(SimpleBuffer& buf);
-    void _SendFile(SendingFile& file);
 protected:
     int             m_thread_index;
     BaseSocket*     m_base_socket;
@@ -85,7 +65,6 @@ protected:
 	uint16_t		m_peer_port;
 	SimpleBuffer	m_in_buf;
 	SimpleBuffer	m_out_buf;
-    list<SendingObject> m_out_list;
 
 	uint64_t		m_last_send_tick;
 	uint64_t		m_last_recv_tick;

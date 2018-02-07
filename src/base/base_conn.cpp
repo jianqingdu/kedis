@@ -146,13 +146,7 @@ BaseConn::BaseConn()
 
 BaseConn::~BaseConn()
 {
-    for (auto it = m_out_list.begin(); it != m_out_list.end(); ++it) {
-        if ((it->type == SENDING_OBJ_TYPE_FILE) && it->file.fp) {
-            fclose(it->file.fp);
-        }
-    }
     
-    m_out_list.clear();
 }
 
 net_handle_t BaseConn::Connect(const string& server_ip, uint16_t server_port, int thread_index)
@@ -217,19 +211,7 @@ int BaseConn::Send(void* data, int len)
     }
     
 	if (m_busy) {
-        if (m_out_list.empty()) {
-            m_out_buf.Write(data, len);
-        } else {
-            SendingObject obj = m_out_list.back();
-            if (obj.type == SENDING_OBJ_TYPE_BUF) {
-                obj.buf.Write(data, len);
-            } else {
-                SendingObject new_obj;
-                new_obj.type = SENDING_OBJ_TYPE_BUF;
-                new_obj.buf.Write(data, len);
-                m_out_list.push_back(new_obj);
-            }
-        }
+        m_out_buf.Write(data, len);
 		return len;
 	}
 
@@ -258,48 +240,6 @@ int BaseConn::Send(void* data, int len)
 	}
 
 	return len;
-}
-
-int BaseConn::SendFile(const string& filename)
-{
-    if (!m_open) {
-        printf("connection do not open yet\n");
-        return -1;
-    }
-    
-    struct stat st;
-    if (stat(filename.c_str(), &st) == -1) {
-        printf("stat failed\n");
-        return -1;
-    }
-
-    struct SendingObject obj;
-    obj.type = SENDING_OBJ_TYPE_FILE;
-    obj.file.filename = filename;
-    obj.file.offset = 0;
-    obj.file.size = st.st_size;
-    obj.file.fp = fopen(filename.c_str(), "rb");
-    if (!obj.file.fp) {
-        printf("open file failed\n");
-        return -1;
-    }
-    
-    m_out_list.push_back(obj);
-    
-    if (m_busy) {
-        return 0;
-    }
-    
-    // if not busy, there is only one SendingObject
-    SendingObject obj_ref = m_out_list.front();
-    _SendFile(obj_ref.file);
-    if (obj_ref.file.offset == obj_ref.file.size) {
-        m_out_list.pop_front();
-    } else {
-        m_busy = true;
-    }
-    
-    return 0;
 }
 
 void BaseConn::OnConnect(BaseSocket *base_socket)
@@ -336,31 +276,24 @@ void BaseConn::OnWrite()
 	if (!m_busy)
 		return;
 
-    _SendBuffer(m_out_buf);
-	if (m_out_buf.GetReadableLen() != 0) {
-        return;
-	}
-
-    while (!m_out_list.empty()) {
-        SendingObject obj = m_out_list.front();
-        if (obj.type == SENDING_OBJ_TYPE_BUF) {
-            _SendBuffer(obj.buf);
-            if (obj.buf.GetReadableLen() == 0) {
-                m_out_list.pop_front();
-            } else {
-                break;
-            }
-        } else {
-            _SendFile(obj.file);
-            if (obj.file.offset == obj.file.size) {
-                m_out_list.pop_front();
-            } else {
-                break;
-            }
+    while (m_out_buf.GetReadableLen() > 0) {
+        int send_size = m_out_buf.GetReadableLen();
+        if (send_size > kMaxSendSize) {
+            send_size = kMaxSendSize;
         }
+        
+        int ret = m_base_socket->Send(m_out_buf.GetReadBuffer(), send_size);
+        if (ret <= 0) {
+            ret = 0;
+            break;
+        }
+        
+        m_out_buf.Read(NULL, ret);
     }
     
-    if (m_out_list.empty()) {
+    m_out_buf.ResetOffset();
+    
+    if (m_out_buf.GetReadableLen() == 0) {
         m_busy = false;
     }
 }
@@ -395,53 +328,6 @@ void BaseConn::_RecvData()
 		m_in_buf.IncWriteOffset(ret);
 		m_last_recv_tick = get_tick_count();
 	}
-}
-
-void BaseConn::_SendBuffer(SimpleBuffer& buf)
-{
-    while (buf.GetReadableLen() > 0) {
-        int send_size = buf.GetReadableLen();
-        if (send_size > kMaxSendSize) {
-            send_size = kMaxSendSize;
-        }
-        
-        int ret = m_base_socket->Send(buf.GetReadBuffer(), send_size);
-        if (ret <= 0) {
-            ret = 0;
-            break;
-        }
-        
-        m_total_net_output_bytes += ret;
-        buf.Read(NULL, ret);
-    }
-    
-    buf.ResetOffset();
-}
-
-void BaseConn::_SendFile(SendingFile& file)
-{
-    char buf[kReadBufSize];
-    while (true) {
-        fseek(file.fp, file.offset, SEEK_SET);
-        int nread = (int)fread(buf, 1, kReadBufSize, file.fp);
-        if (nread <= 0) {
-            Close();
-            break;
-        }
-        
-        int nwritten = m_base_socket->Send(buf, nread);
-        if (nwritten <= 0) {
-            break;
-        }
-        
-        m_total_net_output_bytes += nwritten;
-        file.offset += nwritten;
-        if (file.offset == file.size) {
-            fclose(file.fp);
-            file.fp = NULL;
-            break;
-        }
-    }
 }
 
 // static methods
@@ -493,4 +379,3 @@ int BaseConn::CloseHandle(net_handle_t handle)
     
     return 0;
 }
-
