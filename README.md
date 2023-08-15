@@ -6,7 +6,7 @@ Kedis-Server is a Redis-Protocol compatible persistance NoSQL with RocksDB as it
 Platform
 	
 	Linux 
-	Mac OS X
+	Mac OS X (intel)
 	
 Dependency:
 
